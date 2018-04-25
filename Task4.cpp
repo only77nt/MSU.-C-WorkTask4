@@ -8,6 +8,10 @@ enum type_of_lex{LEX_TAB /*0*/, LEX_DEF /*1*/, LEX_PRINT /*2*/, LEX_INPUT /*3*/,
 
 enum type_of_sem{SEM_NULL/*0*/, SEM_SEP/*1*/, SEM_VAL/*2*/, SEM_LB/*3*/, SEM_RB/*4*/, SEM_ENDL/*5*/, SEM_TAB/*6*/, SEM_IF/*7*/};
 
+
+enum type_var {NUMBER/*0*/, CHAR/*1*/, STRING/*2*/, NUL/*3*/};
+
+
 /*Таблица ключевых слов*/
 string KeyWords[]={"def","print","input","range","for","in","if","elif","else","type","len"};
 /*Таблица одиночных разделителей*/
@@ -46,6 +50,13 @@ struct Node
 	WordList next;
 } wordlist;
 
+typedef struct VAR
+{
+	string name;
+	type_var type;
+} var;
+
+
 /*Взять лексему*/
 WordList GetLex(WordList *List){
 	(*List)=(*List)->next;
@@ -61,6 +72,18 @@ void Error(string buf)
 	throw A;
 }
 
+/**************************************************************************************************/
+
+
+type_var Check( string word);
+
+
+void Check_var(WordList Lst, string word);
+
+
+void Check_print(WordList Lst);
+
+/*************************************************************************************************/
 /*Функция поиска конца строки*/
 int strln(string a)
 {
@@ -805,8 +828,12 @@ class Parser {
 		friend void If_pars(WordList *Lst);
 		friend void Argum(WordList *Lst);
 		friend void Argum1(WordList *Lst);
+		friend type_var Check( string word);  
+		friend void Check_var(WordList Lst, string word);  
+		friend void Check_print(WordList Lst);
 	public:
 /*Начало синтаксического анализа*/
+		vector<VAR> a;
 		Parser(){};
 		void ParsList(WordList *Lst)
 		{
@@ -1139,7 +1166,13 @@ class Parser {
 								Error("После конца input стоит ещё что-то!");
 						}
 						else
+						{
+							if ((*Lst)->next->str=="=")
+								Check_var((*Lst)->next->next, (*Lst)->str);
+							else
+								Error("Ошибка после переменной нет операции присваивания!");
 							Expression(&(*Lst));
+						}
 				}
 				/*Print*/
 				if(Lex->type_l==LEX_PRINT)
@@ -1168,6 +1201,85 @@ class Parser {
 					return;				
 			}	
 		}
+
+
+/**************************************************************************************************/
+
+/*возвращает тип переменной*/
+type_var Check( string word)  
+{
+	
+	for (vector<VAR>::iterator it=a.begin();it!=a.end();it++)
+		if((*it).name==word)
+			return (*it).type;
+	Error("Ошибка с типами в выражении1!");
+}
+/*проверка выражений с присваиванием */
+void Check_var(WordList Lst, string word)  
+{
+	type_var type=NUL;
+	cout<<1<<endl;
+	type_var typ2=NUL;
+	cout<<2<<endl;
+	while(Lst->str!="\\n")
+	{
+		cout<<3<<endl;
+		if (Lst->type_l==LEX_VAR)
+			typ2=Check(Lst->str);
+		cout<<4<<endl;
+		if (Lst->type_l==LEX_CONST)
+			typ2=NUMBER;
+		if (Lst->type_l==LEX_CHAR)
+			typ2=CHAR;
+		if (Lst->type_l==LEX_STR)
+			typ2=STRING;
+		if (typ2!=type && type!=NUL)
+			Error("Ошибка с типами в выражении2!");
+		type=typ2;
+		Lst=Lst->next;
+	}
+	cout<<5<<endl;
+	vector<VAR>::iterator it=a.begin();
+	for (;it!=a.end();it++)
+		if((*it).name==word)
+		{
+			(*it).type=type;
+			break;
+		}
+	if(a.end()==it)
+	{	
+		VAR b;
+		b.name=word;
+		b.type=type;
+		a.push_back(b);
+	}
+
+}
+
+/*проверка выражений таких как в принте или if, while*/
+void Check_print(WordList Lst)
+{
+	type_var type=NUL;
+	type_var typ2=NUL;
+	while(Lst->str!="\\n" && Lst->str!=",")
+	{
+		
+		if (Lst->type_l==LEX_VAR)
+			typ2=Check(Lst->str);
+		if (Lst->type_l==LEX_CONST)
+			typ2=NUMBER;
+		if (Lst->type_l==LEX_CHAR)
+			typ2=CHAR;
+		if (Lst->type_l==LEX_STR)
+			typ2=STRING;
+		if (typ2!=type)
+			Error("Ошибка с типами в выражении3!");
+		type=typ2;
+		Lst=Lst->next;
+	}
+}
+
+/*************************************************************************************************/
 /*Конец синтаксического анализа*/
 };
 
