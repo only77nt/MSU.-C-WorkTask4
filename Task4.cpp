@@ -9,7 +9,7 @@ enum type_of_lex{LEX_TAB /*0*/, LEX_DEF /*1*/, LEX_PRINT /*2*/, LEX_INPUT /*3*/,
 enum type_of_sem{SEM_NULL/*0*/, SEM_SEP/*1*/, SEM_VAL/*2*/, SEM_LB/*3*/, SEM_RB/*4*/, SEM_ENDL/*5*/, SEM_TAB/*6*/, SEM_IF/*7*/};
 
 
-enum type_var {NUMBER/*0*/, CHAR/*1*/, STRING/*2*/, NUL/*3*/};
+enum type_var {NUMBER/*0*/, STRING/*1*/, NUL/*2*/};
 
 
 /*Таблица ключевых слов*/
@@ -1229,9 +1229,7 @@ void Check_var(WordList Lst, string word)
 		cout<<4<<endl;
 		if (Lst->type_l==LEX_CONST)
 			typ2=NUMBER;
-		if (Lst->type_l==LEX_CHAR)
-			typ2=CHAR;
-		if (Lst->type_l==LEX_STR)
+		if (Lst->type_l==LEX_CHAR || Lst->type_l==LEX_STR)
 			typ2=STRING;
 		if (typ2!=type && type!=NUL)
 			Error("Ошибка с типами в выражении2!");
@@ -1268,9 +1266,7 @@ void Check_print(WordList Lst)
 			typ2=Check(Lst->str);
 		if (Lst->type_l==LEX_CONST)
 			typ2=NUMBER;
-		if (Lst->type_l==LEX_CHAR)
-			typ2=CHAR;
-		if (Lst->type_l==LEX_STR)
+		if (Lst->type_l==LEX_CHAR || Lst->type_l==LEX_STR)
 			typ2=STRING;
 		if (typ2!=type)
 			Error("Ошибка с типами в выражении3!");
