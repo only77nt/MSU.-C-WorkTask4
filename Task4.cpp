@@ -73,7 +73,7 @@ void Error(string buf)
 }
 
 /**************************************************************************************************/
-
+void Argum(WordList *Lst);
 
 type_var Check( string word);
 
@@ -671,34 +671,6 @@ void Print(WordList *Lst){
 	}
 };
 
-void Argum(WordList *Lst)
-{
-	WordList Lex=*Lst;
-	if(Lex->type_l==LEX_VAR)
-	{	cout<<Lex->str<<"@@@@@"<<endl;
-		Pcount[FuncNum]++;
-		Lex=GetLex(&(*Lst));
-		if(Lex->str==",")
-		{
-			Lex=GetLex(&(*Lst));
-			Argum(&(*Lst));
-		}
-		else
-			if(Lex->type_sem==SEM_RB)
-			{
-				Bcount--;
-				//cout << Pcount[FuncNum]<<"Колво параметров в функции"<<endl;
-				if(Bcount<0)
-					Error("Закрыв. скобок больше, чем открыв.!");
-				return;
-			}
-			else
-				Error("После первого аргумента стоит не скобка, и не сепаратор");
-	}
-	else
-		Error("Аргумент функции не переменная!");
-};
-
 void Argum1(WordList *Lst)
 {
 	WordList Lex=*Lst;
@@ -842,6 +814,7 @@ class Parser {
 	public:
 /*Начало синтаксического анализа*/
 		vector<VAR> a;
+		vector<VAR> funk;
 		Parser(){};
 		void ParsList(WordList *Lst)
 		{
@@ -849,6 +822,15 @@ class Parser {
 			b.name="i";
 			b.type=NUMBER;
 			a.push_back(b);
+			/*b.name="str";
+			b.type=NUMBER;
+			funk.push_back(b);
+			b.name="len";
+			b.type=NUMBER;
+			funk.push_back(b);
+			b.name="type";
+			b.type=STRING;
+			funk.push_back(b);*/
 			string FuncName[50];
 			int i=0;
 			int TABcountBuf=1;
@@ -879,8 +861,16 @@ class Parser {
 						Lex=GetLex(&(*Lst));
 					}
 				}
-				if(TABcount==0)
-					cout<<"Я опускаю FUNCflag, тело функции кончилось!"<<endl;
+				if(TABcount==0 && FUNCflag)
+				{
+					FUNCflag=false;
+					a.clear();//очистили вектор для того чтобы после окончания функции были новые переменные
+					VAR b;
+					b.name="i";
+					b.type=NUMBER;
+					a.push_back(b);
+					cout<<"Я опускаю FUNCflag, тело функции кончилось!   "<<FUNCflag<<endl;
+				}
 				cout << "FORcount1="<<FORcount<< endl;
 				cout << "TABcountBUF1="<<TABcountBuf<< endl;	
 				cout << "TABcount1="<<TABcount<< endl;
@@ -1233,9 +1223,56 @@ class Parser {
 			}	
 		}
 
+void Argum(WordList *Lst)
+{
+	WordList Lex=*Lst;
+	VAR b;
+	if(Lex->type_l==LEX_VAR)
+	{	cout<<Lex->str<<"@@@@@"<<endl;
+		b.name=Lex->str;
+		b.type=NUL;
+		a.push_back(b);
+		Pcount[FuncNum]++;
+		Lex=GetLex(&(*Lst));
+		if(Lex->str==",")
+		{
+			Lex=GetLex(&(*Lst));
+			Argum(&(*Lst));
+		}
+		else
+			if(Lex->type_sem==SEM_RB)
+			{
+				Bcount--;
+				//cout << Pcount[FuncNum]<<"Колво параметров в функции"<<endl;
+				if(Bcount<0)
+					Error("Закрыв. скобок больше, чем открыв.!");
+				return;
+			}
+			else
+				Error("После первого аргумента стоит не скобка, и не сепаратор");
+	}
+	else
+		Error("Аргумент функции не переменная!");
+};
 
 /**************************************************************************************************/
 
+
+
+void Check_funk(WordList *Lst)
+{
+	int count=1;
+	(*Lst)=(*Lst)->next;
+	while(count!=0)
+	{
+		Check_print(&(*Lst));
+		if ((*Lst)->str=="(")
+			count++;
+		if ((*Lst)->str==")")
+			count--;
+		(*Lst)=(*Lst)->next;
+	}
+}
 /*возвращает тип переменной*/
 type_var Check( string word)  
 {
@@ -1255,6 +1292,12 @@ void Check_var(WordList Lst, string word)
 	while(Lst->str!="\\n" && Lst->str!=",")
 	{
 		cout<<3<<endl;
+		if (Lst->str=="len" || Lst->str=="str")
+			typ2=NUMBER;
+		if (Lst->str=="type" )
+			typ2=STRING;
+		if (Lst->str=="len" || Lst->str=="str" || Lst->str=="type")
+			Check_funk(&Lst);
 		if (Lst->type_l==LEX_VAR)
 			typ2=Check(Lst->str);
 		cout<<4<<endl;
@@ -1262,7 +1305,7 @@ void Check_var(WordList Lst, string word)
 			typ2=NUMBER;
 		if (Lst->type_l==LEX_CHAR || Lst->type_l==LEX_STR)
 			typ2=STRING;
-		if (typ2!=type && type!=NUL)
+		if (typ2!=type && type!=NUL && typ2!=NUL)
 			Error("Ошибка с типами в выражении2!");
 		type=typ2;
 		Lst=Lst->next;
@@ -1293,6 +1336,12 @@ void Check_print(WordList *Lst)
 	cout<<"LOL"<<endl;
 	while(1)
 	{
+		if ((*Lst)->str=="len" || (*Lst)->str=="str")
+			typ2=NUMBER;
+		if ((*Lst)->str=="type" )
+			typ2=STRING;
+		if ((*Lst)->str=="len" || (*Lst)->str=="str" || (*Lst)->str=="type")
+			Check_funk(&(*Lst));
 		if((*Lst)->str=="\\n" || (*Lst)->str=="," 
 			|| (*Lst)->str=="+" || (*Lst)->str==")" 
 			||  (*Lst)->str=="[" ||  (*Lst)->str=="]"   )
@@ -1304,7 +1353,7 @@ void Check_print(WordList *Lst)
 			typ2=NUMBER;
 		if ((*Lst)->type_l==LEX_CHAR || (*Lst)->type_l==LEX_STR)
 			typ2=STRING;
-		if (typ2!=type && type!=NUL)
+		if (typ2!=type && type!=NUL  && typ2!=NUL)
 			Error("Ошибка с типами в выражении3!");
 		type=typ2;
 		(*Lst)=(*Lst)->next;
@@ -1319,8 +1368,12 @@ void Check_if(WordList *Lst)
 	cout<<"LOL"<<endl;
 	while(1)
 	{
-		if ((*Lst)->str=="len")
-			(*Lst)=(*Lst)->next->next->next;
+		if ((*Lst)->str=="len" || (*Lst)->str=="str")
+			typ2=NUMBER;
+		if ((*Lst)->str=="type" )
+			typ2=STRING;
+		if ((*Lst)->str=="len" || (*Lst)->str=="str" || (*Lst)->str=="type")
+			Check_funk(&(*Lst));
 		if((*Lst)->str=="\\n" ||  (*Lst)->str=="[" ||  (*Lst)->str=="]"   )
 			break;
 		cout<<"*****"<<(*Lst)->str<<endl;
@@ -1330,7 +1383,7 @@ void Check_if(WordList *Lst)
 			typ2=NUMBER;
 		if ((*Lst)->type_l==LEX_CHAR || (*Lst)->type_l==LEX_STR)
 			typ2=STRING;
-		if (typ2!=type && type!=NUL)
+		if (typ2!=type && type!=NUL  && typ2!=NUL)
 			Error("Ошибка с типами в выражении3!");
 		type=typ2;
 		(*Lst)=(*Lst)->next;

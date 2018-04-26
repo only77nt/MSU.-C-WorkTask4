@@ -1,5 +1,6 @@
 #!/usr/bin/env python3 
-
+def funk(a,b):
+	b=3+a
 #первая строка указывает что нужно компилировать при помощи интерпритатора питон3
 print ("Hello World!!!")
 name = input("What is your name?\n")
@@ -37,13 +38,14 @@ a=b+c
 if len(month)==1:
 	print("first if")
 	a=b+c
-elif len(month)>2:
+elif len(month-"LLLL")>2:
 	print("next if")
 else:
 	print("last if")
 '''
 Example
 '''
+funk(a,b)
 mas1 ="CMC msu best faculty"
 mas2='in the world'
 mas1=mas1+mas2
