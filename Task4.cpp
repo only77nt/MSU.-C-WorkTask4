@@ -1,10 +1,10 @@
 #include "stdafx.h" /*Тут лежат все библиотеки, мой файл!*/
 using namespace std;
-#define countKey 20
+#define countKey 21
 #define countSep1 12
 #define countSep2 7
 #define countSpace 2
-enum type_of_lex{LEX_TAB /*0*/, LEX_DEF /*1*/, LEX_PRINT /*2*/, LEX_INPUT /*3*/, LEX_FOR /*4*/, LEX_IF /*5*/, LEX_TYPE /*6*/, LEX_LEN /*7*/, LEX_CONST /*8*/, LEX_VAR /*9*/, LEX_ENDL /*10*/, LEX_SEP /*11*/, LEX_NULL /*12*/, LEX_STR /*13*/, LEX_CHAR/*14*/, LEX_EQ/*15*/, LEX_LOG/*16*/,LEX_LB/*17*/,LEX_RB/*18*/,LEX_FUNC/*19*/, LEX_WHILE/*20*/};
+enum type_of_lex{LEX_TAB /*0*/, LEX_DEF /*1*/, LEX_PRINT /*2*/, LEX_INPUT /*3*/, LEX_FOR /*4*/, LEX_IF /*5*/, LEX_TYPE /*6*/, LEX_LEN /*7*/, LEX_CONST /*8*/, LEX_VAR /*9*/, LEX_ENDL /*10*/, LEX_SEP /*11*/, LEX_NULL /*12*/, LEX_STR /*13*/, LEX_CHAR/*14*/, LEX_EQ/*15*/, LEX_LOG/*16*/,LEX_LB/*17*/,LEX_RB/*18*/,LEX_FUNC/*19*/, LEX_WHILE/*20*/, LEX_STRR/*21*/};
 
 enum type_of_sem{SEM_NULL/*0*/, SEM_SEP/*1*/, SEM_VAL/*2*/, SEM_LB/*3*/, SEM_RB/*4*/, SEM_ENDL/*5*/, SEM_TAB/*6*/, SEM_IF/*7*/};
 
@@ -81,7 +81,9 @@ type_var Check( string word);
 void Check_var(WordList Lst, string word);
 
 
-void Check_print(WordList Lst);
+void Check_print(WordList *Lst);
+
+void Check_if(WordList *Lst);
 
 /*************************************************************************************************/
 /*Функция поиска конца строки*/
@@ -220,6 +222,11 @@ WordList create(string s,WordList a)
 	if(s=="type")
 	{
 		d->type_l=LEX_TYPE;
+		d->type_sem=SEM_VAL;
+	}
+	if(s=="str")
+	{
+		d->type_l=LEX_STRR;
 		d->type_sem=SEM_VAL;
 	}
 	if(s=="while")
@@ -830,13 +837,18 @@ class Parser {
 		friend void Argum1(WordList *Lst);
 		friend type_var Check( string word);  
 		friend void Check_var(WordList Lst, string word);  
-		friend void Check_print(WordList Lst);
+		friend void Check_print(WordList *Lst);
+		friend void Check_if(WordList *Lst);
 	public:
 /*Начало синтаксического анализа*/
 		vector<VAR> a;
 		Parser(){};
 		void ParsList(WordList *Lst)
 		{
+			VAR b;
+			b.name="i";
+			b.type=NUMBER;
+			a.push_back(b);
 			string FuncName[50];
 			int i=0;
 			int TABcountBuf=1;
@@ -1074,6 +1086,8 @@ class Parser {
 					{
 						FORcount++;
 						Lex=GetLex(&(*Lst));
+						WordList Ls=*Lst;
+						Check_if(&Ls);
 						BoolExpression(&(*Lst));
 						cout<<"LEX   "<<(*Lst)->str<<endl;
 						if ((*Lst)->str==":")
@@ -1088,6 +1102,8 @@ class Parser {
 							if (FORcount<0)
 								Error("Ошибка в ELIF");
 							Lex=GetLex(&(*Lst));
+							WordList Ls=*Lst;
+							Check_if(&Ls);
 							BoolExpression(&(*Lst));
 							cout<<"LEX   "<<(*Lst)->str<<endl;
 							if ((*Lst)->str==":")
@@ -1117,6 +1133,8 @@ class Parser {
 					cout<<"вошли в While"<<endl;
 					Lex=GetLex(&(*Lst));
 					FORcount++;
+					WordList Ls=*Lst;
+					Check_if(&Ls);
 					BoolExpression(&(*Lst)); //BoolExpression(&(*Lst));
 					cout<<"LEX   "<<(*Lst)->str<<endl;
 					if ((*Lst)->str==":")
@@ -1131,11 +1149,13 @@ class Parser {
 					/*ARRAYS*/
 					if((*Lst)->next->next->str=="[")
 					{
+						string word=(*Lst)->str;
 						Lex=GetLex(&(*Lst));
 						if(Lex->str=="=")
 							Lex=GetLex(&(*Lst));
 						else
 							Error("Ошибка в Arrays1!");
+						Check_var((*Lst)->next, word);
 						Lex=GetLex(&(*Lst));
 						if(Lex->type_sem!=SEM_VAL)
 							Error("Массив начинается не с переменной!");
@@ -1145,11 +1165,13 @@ class Parser {
 						/*Input*/
 						if(Lex->next->next->type_l==LEX_INPUT)
 						{
+							string word=(*Lst)->str;
 							Lex=GetLex(&(*Lst));
 							if(Lex->str=="=")
 								Lex=GetLex(&(*Lst));
 							else
 								Error("Нету равно в input!");
+							Check_var((*Lst)->next->next, word);
 							Lex=GetLex(&(*Lst));
 							if(Lex->type_sem==SEM_LB)
 							{
@@ -1187,6 +1209,15 @@ class Parser {
 						Error("Нет откр. скобки в print!");
 					if(Lex->type_sem!=SEM_VAL)
 						Error("Печать начинается не с переменной!");
+					WordList Ls=(*Lst);
+					while (Ls->str!="\\n")
+					{
+						cout<<Ls->str<<endl;
+						/*if (Ls->str=="\\n")
+							break;*/
+						Check_print(&Ls);
+						Ls=Ls->next;
+					}
 					Print(&(*Lst));
 					Lex=GetLex(&(*Lst));
 					if(Lex->type_sem!=SEM_ENDL)
@@ -1221,7 +1252,7 @@ void Check_var(WordList Lst, string word)
 	cout<<1<<endl;
 	type_var typ2=NUL;
 	cout<<2<<endl;
-	while(Lst->str!="\\n")
+	while(Lst->str!="\\n" && Lst->str!=",")
 	{
 		cout<<3<<endl;
 		if (Lst->type_l==LEX_VAR)
@@ -1254,24 +1285,55 @@ void Check_var(WordList Lst, string word)
 
 }
 
-/*проверка выражений таких как в принте или if, while*/
-void Check_print(WordList Lst)
+/*проверка выражений таких как в принте */
+void Check_print(WordList *Lst)
 {
 	type_var type=NUL;
 	type_var typ2=NUL;
-	while(Lst->str!="\\n" && Lst->str!=",")
+	cout<<"LOL"<<endl;
+	while(1)
 	{
-		
-		if (Lst->type_l==LEX_VAR)
-			typ2=Check(Lst->str);
-		if (Lst->type_l==LEX_CONST)
+		if((*Lst)->str=="\\n" || (*Lst)->str=="," 
+			|| (*Lst)->str=="+" || (*Lst)->str==")" 
+			||  (*Lst)->str=="[" ||  (*Lst)->str=="]"   )
+			break;
+		cout<<"*****"<<(*Lst)->str<<endl;
+		if ((*Lst)->type_l==LEX_VAR)
+			typ2=Check((*Lst)->str);
+		if ((*Lst)->type_l==LEX_CONST)
 			typ2=NUMBER;
-		if (Lst->type_l==LEX_CHAR || Lst->type_l==LEX_STR)
+		if ((*Lst)->type_l==LEX_CHAR || (*Lst)->type_l==LEX_STR)
 			typ2=STRING;
-		if (typ2!=type)
+		if (typ2!=type && type!=NUL)
 			Error("Ошибка с типами в выражении3!");
 		type=typ2;
-		Lst=Lst->next;
+		(*Lst)=(*Lst)->next;
+	}
+}
+
+/*проверка выражений таких как в  if, while*/
+void Check_if(WordList *Lst)
+{
+	type_var type=NUL;
+	type_var typ2=NUL;
+	cout<<"LOL"<<endl;
+	while(1)
+	{
+		if ((*Lst)->str=="len")
+			(*Lst)=(*Lst)->next->next->next;
+		if((*Lst)->str=="\\n" ||  (*Lst)->str=="[" ||  (*Lst)->str=="]"   )
+			break;
+		cout<<"*****"<<(*Lst)->str<<endl;
+		if ((*Lst)->type_l==LEX_VAR)
+			typ2=Check((*Lst)->str);
+		if ((*Lst)->type_l==LEX_CONST)
+			typ2=NUMBER;
+		if ((*Lst)->type_l==LEX_CHAR || (*Lst)->type_l==LEX_STR)
+			typ2=STRING;
+		if (typ2!=type && type!=NUL)
+			Error("Ошибка с типами в выражении3!");
+		type=typ2;
+		(*Lst)=(*Lst)->next;
 	}
 }
 
