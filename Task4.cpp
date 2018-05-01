@@ -8,8 +8,7 @@ enum type_of_lex{LEX_TAB /*0*/, LEX_DEF /*1*/, LEX_PRINT /*2*/, LEX_INPUT /*3*/,
 
 enum type_of_sem{SEM_NULL/*0*/, SEM_SEP/*1*/, SEM_VAL/*2*/, SEM_LB/*3*/, SEM_RB/*4*/, SEM_ENDL/*5*/, SEM_TAB/*6*/, SEM_IF/*7*/};
 
-
-enum type_var {NUMBER/*0*/, STRING/*1*/, NUL/*2*/};
+enum type_var {LOG/*0*/,SEP/*1*/,RB/*2*/,LB/*3*/,STRING/*4*/,NUMBER/*5*/,NUL/*6*/};
 
 
 /*Таблица ключевых слов*/
@@ -33,11 +32,13 @@ int Pcount[50]; /*Счётчик кол-ва параметров функции
 int ErrorCount=1;
 
 /*Класс исключений*/
-class Excpt{
+class Excpt : public exception {
 public:
-	string msg;
-	Excpt(){};
-	const string what() {return msg;}
+	explicit Excpt( string _msg ): msg( move( _msg ) ) {}
+	const char* what() const noexcept override { return msg.c_str(); }
+
+private:
+	const string msg;
 };
 
 /*Структура списка*/
@@ -50,12 +51,17 @@ struct Node
 	WordList next;
 } wordlist;
 
-typedef struct VAR
+struct VAR
 {
 	string name;
 	type_var type;
-} var;
+};
 
+struct ForPoliz
+{
+	string name;
+	int weight;
+};
 
 /*Взять лексему*/
 WordList GetLex(WordList *List){
@@ -67,9 +73,7 @@ return Lst;
 /*Функция выкидывающая исключение*/
 void Error(string buf)
 {
-	Excpt A;
-	A.msg=buf;
-	throw A;
+	throw Excpt( move( buf ) );
 }
 
 /**************************************************************************************************/
@@ -86,48 +90,41 @@ void Check_print(WordList *Lst);
 void Check_if(WordList *Lst);
 
 /*************************************************************************************************/
-/*Функция поиска конца строки*/
-int strln(string a)
-{
-	int i=0;
-	for (;a[i]!='\0';i++);
-	return i;
-}
 
 /*Функция поиска в первой таблице сепараторов*/
 bool IsInTableSep1(string str, string* mas){
-int i=0;
-while(i<countSep1)
-{
-	if(mas[i]==str)
-		return true;
-	i++;
-}
-return false;
+	int i=0;
+	while(i<countSep1)
+	{
+		if(mas[i]==str)
+			return true;
+		i++;
+	}
+	return false;
 }
 
 /*Функция поиска во второй таблице сепараторов*/
 bool IsInTableSep2(string str, string* mas){
-int i=0;
-while(i<countSep2)
-{
-	if(mas[i]==str)
-		return true;
-	i++;
-}
-return false;
+	int i=0;
+	while(i<countSep2)
+	{
+		if(mas[i]==str)
+			return true;
+		i++;
+	}
+	return false;
 }
 
 /*Функция поиска в таблице пробелов,табуляций,\n*/
 bool IsInTableSpace(string str, string* mas){
-int i=0;
-while(i<countSpace)
-{
-	if(mas[i]==str)
-		return true;
-	i++;
-}
-return false;
+	int i=0;
+	while(i<countSpace)
+	{
+		if(mas[i]==str)
+			return true;
+		i++;
+	}
+	return false;
 }
  
 /*Создание и добавление в конец списка новой лексемы*/
@@ -337,29 +334,25 @@ bool Serch_end(string word, string end)
 
 /*КЛАСС СКАНЕР*/
 class Scanner {
-	friend int strln(string a);
-	friend bool IsInTableSep1(string str, string* mas);
-	friend bool IsInTableSep2(string str, string* mas);
-	friend bool IsInTableSpace(string str, string* mas);
-	friend WordList create(string s,WordList a);
-	friend bool Clean_L(WordList *a);
-	friend void Print_L(WordList a);
-
-	public:
+private:
 	WordList List=NULL;
+
+public:
+    WordList GetWordList() { return List; }
+
 	Scanner(const char* Filebuf){
 		
 		WordList SepList=NULL;
 		char in[512];
 		char buf[512];
 		int flag=0;
-		int i=0,j=0,m=0;
+
 		string a,strbuf;
 		ifstream file(Filebuf);
 		while(file.getline(buf,512)){		
-			i=0;
-			j=0;
-			m=0;
+			int i=0;
+			int j=0;
+			int m=0;
 			if(buf[i]=='\0') /*Пропускаем все бессмысленные \n*/
 				continue;
 			if(buf[i]=='#') /*Ловим комментарии с # в начале строки*/
@@ -383,7 +376,7 @@ class Scanner {
 				while(buf[m]=='\t')
 					m++;
 				if(buf[m]=='\0')
-				continue;
+					continue;
 				if(buf[m]=='\'' && buf[m+1]=='\'' && buf[m+2]=='\'' || buf[m]=='#')
 					continue;
 			}
@@ -842,7 +835,7 @@ class Parser {
 				if(Lex->type_l==LEX_ENDL)
 				{
 					TABcount=0;
-					Lex=GetLex(&(*Lst));
+					Lex=GetLex(Lst);
 					cout << "Готовлюсь выходить из цикла!" << endl;
 					ErrorCount++;
 					if((*Lst)==NULL)
@@ -858,7 +851,7 @@ class Parser {
 						cout << "TABcountBUF="<<TABcountBuf<< endl;	
 						TABcount++;
 						cout << "TABcount="<<TABcount<< endl;						
-						Lex=GetLex(&(*Lst));
+						Lex=GetLex(Lst);
 					}
 				}
 				if(TABcount==0 && FUNCflag)
@@ -1077,13 +1070,13 @@ class Parser {
 						FORcount++;
 						Lex=GetLex(&(*Lst));
 						WordList Ls=*Lst;
-						Check_if(&Ls);
 						BoolExpression(&(*Lst));
 						cout<<"LEX   "<<(*Lst)->str<<endl;
 						if ((*Lst)->str==":")
 							Lex=GetLex(&(*Lst));
 						else
-							Error("Ошибка в IF");					
+							Error("Ошибка в IF");
+						Check_if(&Ls);					
 					}
 					else
 						if (Lex->str=="elif")
@@ -1093,13 +1086,13 @@ class Parser {
 								Error("Ошибка в ELIF");
 							Lex=GetLex(&(*Lst));
 							WordList Ls=*Lst;
-							Check_if(&Ls);
 							BoolExpression(&(*Lst));
 							cout<<"LEX   "<<(*Lst)->str<<endl;
 							if ((*Lst)->str==":")
 								Lex=GetLex(&(*Lst));
 							else
 								Error("Ошибка в ELIF");
+							Check_if(&Ls);
 							FORcount++;						
 						}
 						else
@@ -1124,13 +1117,13 @@ class Parser {
 					Lex=GetLex(&(*Lst));
 					FORcount++;
 					WordList Ls=*Lst;
-					Check_if(&Ls);
 					BoolExpression(&(*Lst)); //BoolExpression(&(*Lst));
 					cout<<"LEX   "<<(*Lst)->str<<endl;
 					if ((*Lst)->str==":")
 						Lex=GetLex(&(*Lst));
 					else
 						Error("Ошибка в While");
+					Check_if(&Ls);
 					cout<<Lex->str<<"LEXEMA"<<endl;
 				}
 				/*Выражение*/			
@@ -1145,11 +1138,12 @@ class Parser {
 							Lex=GetLex(&(*Lst));
 						else
 							Error("Ошибка в Arrays1!");
-						Check_var((*Lst)->next, word);
+						WordList Ls=*Lst;
 						Lex=GetLex(&(*Lst));
 						if(Lex->type_sem!=SEM_VAL)
 							Error("Массив начинается не с переменной!");
 						Expression(&(*Lst));
+						Check_var(Ls->next, word);
 					}
 					else
 						/*Input*/
@@ -1161,7 +1155,7 @@ class Parser {
 								Lex=GetLex(&(*Lst));
 							else
 								Error("Нету равно в input!");
-							Check_var((*Lst)->next->next, word);
+							WordList Ls=*Lst;
 							Lex=GetLex(&(*Lst));
 							if(Lex->type_sem==SEM_LB)
 							{
@@ -1176,14 +1170,16 @@ class Parser {
 							Lex=GetLex(&(*Lst));
 							if(Lex->type_sem!=SEM_ENDL)
 								Error("После конца input стоит ещё что-то!");
+							Check_var(Ls->next->next, word);
 						}
 						else
 						{
-							if ((*Lst)->next->str=="=")
-								Check_var((*Lst)->next->next, (*Lst)->str);
+							WordList Ls=*Lst;
+							Expression(&(*Lst));
+							if (Ls->next->str=="=")
+								Check_var(Ls->next->next, Ls->str);
 							else
 								Error("Ошибка после переменной нет операции присваивания!");
-							Expression(&(*Lst));
 						}
 				}
 				/*Print*/
@@ -1200,6 +1196,10 @@ class Parser {
 					if(Lex->type_sem!=SEM_VAL)
 						Error("Печать начинается не с переменной!");
 					WordList Ls=(*Lst);
+					Print(&(*Lst));
+					Lex=GetLex(&(*Lst));
+					if(Lex->type_sem!=SEM_ENDL)
+						Error("После конца принта стоит ещё что-то!");
 					while (Ls->str!="\\n")
 					{
 						cout<<Ls->str<<endl;
@@ -1208,10 +1208,6 @@ class Parser {
 						Check_print(&Ls);
 						Ls=Ls->next;
 					}
-					Print(&(*Lst));
-					Lex=GetLex(&(*Lst));
-					if(Lex->type_sem!=SEM_ENDL)
-						Error("После конца принта стоит ещё что-то!");
 				}
 				/*Переход к следующему элементу списка*/
 				TABcount=0;
@@ -1259,6 +1255,121 @@ void Argum(WordList *Lst)
 
 
 
+/*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
+
+
+
+
+void type_inside( vector<type_var> *var, vector<type_var> *sep )
+{
+	while(1)
+	{
+		if(((*sep).begin()+1)==(*sep).end())
+			return;
+		vector<type_var>::reverse_iterator it_var=(*var).rbegin();
+		vector<type_var>::reverse_iterator it_sep=(*sep).rbegin();
+		if(*(it_var)!=RB || *(it_var)!=LB)
+			if(*(it_var+1)!=RB || *(it_var+1)!=LB)
+				if(*(it_sep)!=LOG)	
+					if(*(it_var)==*(it_var+1))
+					{
+						(*var).pop_back();
+						(*var).pop_back();
+						(*sep).pop_back();
+						(*var).push_back(*(it_var));
+					}
+					else
+						Error("Ошибка с типами в выражении!");
+				else
+					if(*(it_var)==*(it_var+1))
+					{
+						(*var).pop_back();
+						(*var).pop_back();
+						(*sep).pop_back();
+						(*var).push_back(NUMBER);
+					}
+					else
+						Error("Ошибка с типами в выражении!");
+			else
+			{		
+				type_var va=*(it_var);
+				type_var se=*(it_sep);		
+				(*var).pop_back();
+				(*sep).pop_back();
+				(*var).pop_back();
+				(*sep).pop_back();
+				type_inside(var,sep);	//проверит все что внутри скобок
+				(*var).push_back(va);
+				(*sep).push_back(se);
+			}
+		else
+		{					
+			if(*(it_var)==LB)
+			{
+				(*var).pop_back();
+				(*sep).pop_back();
+				return;
+			}
+			(*var).pop_back();
+			(*sep).pop_back();
+			type_inside(var,sep);	//проверит все что внутри скобок
+		} 
+	}
+}
+
+
+
+void do_vect( WordList& Lst, vector<type_var> *var, vector<type_var> *sep )//нужно смотреть все это в одном вайле
+{
+	while (Lst->str !="\\n")
+	{
+		if (Lst->type_l==LEX_SEP)
+		{
+			type_var b=SEP;
+			(*sep).push_back(b);
+		}
+		if (Lst->type_l==LEX_LOG)
+		{
+			type_var b=LOG;
+			(*sep).push_back(b);
+		}
+		if (Lst->type_l==LEX_RB)
+		{
+			type_var b=RB;
+			(*var).push_back(b);
+			(*sep).push_back(b);
+		}
+		if (Lst->type_l==LEX_LB)
+		{
+			type_var b=LB;
+			(*var).push_back(b);
+			(*sep).push_back(b);
+		}
+		if (Lst->type_l==LEX_STR || Lst->type_l==LEX_CHAR)
+		{
+			type_var b=STRING;
+			(*var).push_back(b);
+		}
+		if (Lst->type_l==LEX_VAR)
+		{
+			type_var b=Check(Lst->str);
+			(*var).push_back(b);
+		}
+		if (Lst->type_l==LEX_CONST)
+		{
+			type_var b=NUMBER;
+			(*var).push_back(b);
+		}
+	}	
+	
+	
+	
+	return;
+}
+
+
+/*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
+
 void Check_funk(WordList *Lst)
 {
 	int count=1;
@@ -1280,7 +1391,7 @@ type_var Check( string word)
 	for (vector<VAR>::iterator it=a.begin();it!=a.end();it++)
 		if((*it).name==word)
 			return (*it).type;
-	Error("Ошибка с типами в выражении1!");
+	Error("Неизвестная переменная!");
 }
 /*проверка выражений с присваиванием */
 void Check_var(WordList Lst, string word)  
@@ -1394,6 +1505,296 @@ void Check_if(WordList *Lst)
 /*Конец синтаксического анализа*/
 };
 
+/*ПОЛИЗ*/
+class Poliz{
+private:
+	friend WordList GetLex(WordList *Lst);
+	friend void Error(char* buf);
+public:
+	vector<string> StackVAR;
+	vector<ForPoliz> StackOP;
+	ForPoliz Buf;
+	Poliz(){};
+	string a;
+	int Poz=0;
+	vector<int> PozF;
+	vector<int> PozT;
+	void PrintStackVAR() /*Функция печати ПОЛИЗА*/
+	{
+		for(vector<string>::iterator it=StackVAR.begin();it!=StackVAR.end();it++)
+			cout << (*it) << endl;
+	}	
+	void ClearStack() /*Функция очищения стека*/
+	{
+		ForPoliz Buf;
+		Buf=StackOP.back();
+		while(Buf.name!="@" && Buf.name!="=" && Buf.name!="(")
+		{
+			Poz++;
+			StackVAR.push_back(Buf.name);
+			StackOP.pop_back();
+			Buf=StackOP.back();
+		}
+	}
+	void Check() /*Функция проверки*/
+	{
+		ForPoliz Buf1,Buf2;
+		cout << "Check!" << endl;
+		Buf1=StackOP.back();
+		cout << Buf1.name << " Buf1" << endl;
+		StackOP.pop_back();
+		Buf2=StackOP.back();
+		cout << Buf2.name << " Buf2" << endl;
+		if(Buf1.name==")")
+		{
+			StackOP.pop_back();
+			ClearStack();
+			StackOP.pop_back();
+		}
+		if(Buf1.weight < Buf2.weight)
+		{
+			ClearStack();
+			cout << "Отчистил стэк операций!" <<endl;
+			StackOP.push_back(Buf1);
+		}
+		else
+		{
+			StackOP.push_back(Buf1);
+		}
+	};
+	void PolizList(WordList& Lst) /*Построение ПОЛИЗА*/
+	{
+		bool WhileFlag=false;
+		bool IfFlag=false;
+		bool ElFlag=false;
+		int Wcount=0;
+		int Icount=0;
+		//cout << Lst->str << "POLIZ!" << endl;
+		Buf.name="@";
+		Buf.weight=-1;
+		StackOP.push_back(Buf);
+		while(1)
+		{
+			cout << Lst->str << " Сейчас!" << endl;
+			if(Lst->str=="if" || Lst->str=="elif")
+			{
+				IfFlag=true;
+				Icount++;
+			}
+			else
+				if(Lst->str=="else")
+				{
+					/*ClearStack();
+					PozT.push_back(Poz);
+					StackVAR.push_back("NULL");
+					Poz++;
+					StackVAR.push_back("!");
+					Poz++;
+					Lst=Lst->next->next->next;
+					ElFlag=true;*/
+				}
+			else
+				if(Lst->str==":")
+				{
+					ClearStack();
+					PozF.push_back(Poz);
+					StackVAR.push_back("NULL");
+					Poz++;
+					StackVAR.push_back("!F");
+					Poz++;
+				}
+			else
+				if(Lst->str=="while" || Lst->str=="for")
+				{
+					WhileFlag=true;
+					Wcount++;
+					cout << "Зашёл в while (for)!" << endl;
+				}
+			else
+				if(Lst->str=="\\t")
+				{
+					cout << "Пропускаю табуляции!" << endl;
+				}
+			else
+				if(Lst->str=="\\n")
+				{
+					ClearStack();
+					Buf=StackOP.back();
+					while(Buf.name!="@")
+					{
+						cout << Buf.name << " Последние символы!" << endl;
+						StackVAR.push_back(Buf.name);
+						Poz++;
+						StackOP.pop_back();
+						Buf=StackOP.back();
+					}
+					/*Для if (на этом моменте if-выражение закончилось)*/
+					if(Lst->next!=NULL && Lst->next->str!="\\t" && IfFlag)
+					{	cout << "			Я ТУТ1" << endl;
+						if(Lst->next->str=="else")
+						{
+							ClearStack();
+							PozT.push_back(Poz);
+							StackVAR.push_back("NULL");
+							Poz++;
+							StackVAR.push_back("!");
+							Poz++;
+							Lst=Lst->next->next->next;
+							ElFlag=true;	
+						}
+						for(vector<int>::iterator it=PozF.begin();it!=PozF.end();it++)
+						{
+							//cout << (*it) << "PozF1" << endl;
+							StackVAR[(*it)]=to_string(Poz);
+						}
+						while(Icount)
+						{
+							PozF.pop_back();
+							Icount--;
+						}
+						IfFlag=false;	
+					}
+					if(Lst->next==NULL && IfFlag)
+					{	cout << "			Я ТУТ2" << endl;
+						for(vector<int>::iterator it=PozF.begin();it!=PozF.end();it++)
+						{
+							//cout << (*it) << "PozF1" << endl;
+							StackVAR[(*it)]=to_string(Poz);
+						}
+						while(Icount)
+						{
+							PozF.pop_back();
+							Icount--;
+						}
+						IfFlag=false;	
+					}
+					/**/
+					/*Для else*/
+					if(Lst->next!=NULL && Lst->next->str!="\\t" && ElFlag)
+					{
+						for(vector<int>::iterator it=PozT.begin();it!=PozT.end();it++)
+						{
+							//cout << (*it) << "PozF1" << endl;
+							StackVAR[(*it)]=to_string(Poz);
+						}
+						PozT.pop_back();
+						ElFlag=false;	
+					}
+					if(Lst->next==NULL && ElFlag)
+					{
+						for(vector<int>::iterator it=PozT.begin();it!=PozT.end();it++)
+						{
+							//cout << (*it) << "PozF1" << endl;
+							StackVAR[(*it)]=to_string(Poz);
+						}
+						PozT.pop_back();
+						ElFlag=false;	
+					}
+					/**/
+					/*Для while*/
+					if(Lst->next!=NULL && Lst->next->str!="\\t" && WhileFlag) /*While-помощник, вставляем позицию*/
+					{
+						for(vector<int>::iterator it=PozF.begin();it!=PozF.end();it++)
+						{
+							//cout << (*it) << "PozF1" << endl;
+							StackVAR[(*it)]=to_string(Poz);
+						}
+						while(Wcount)
+						{
+							PozF.pop_back();
+							Wcount--;
+						}
+						WhileFlag=false;
+					}
+					if(Lst->next==NULL && WhileFlag) /*Аналогичный while-помощник для конца файла (не можем считать лексему!)*/
+					{
+						for(vector<int>::iterator it=PozF.begin();it!=PozF.end();it++)
+						{
+							//cout << (*it) << "PozF1" << endl;
+							StackVAR[(*it)]=to_string(Poz);
+						}
+						while(Wcount)
+						{
+							PozF.pop_back();
+							Wcount--;
+						}
+						WhileFlag=false;
+					}
+					/**/
+					Buf.name="	#";
+					Buf.weight=-1;
+					StackVAR.push_back(Buf.name);
+					Poz++;
+					if(Lst->next==NULL)
+						break;
+				}
+			else
+				if(Lst->str=="=" || Lst->str=="+=" || Lst->str=="-=")
+				{
+					Buf.name=Lst->str;
+					Buf.weight=0;
+					StackOP.push_back(Buf);
+					Check();
+				}
+			else
+				if(Lst->str=="==" || Lst->str=="!=")
+				{
+					Buf.name=Lst->str;
+					Buf.weight=1;
+					StackOP.push_back(Buf);
+					Check();
+				}
+			else
+				if(Lst->str=="<" || Lst->str=="<=" || Lst->str==">" || Lst->str==">=")
+				{
+					Buf.name=Lst->str;
+					Buf.weight=2;
+					StackOP.push_back(Buf);
+					Check();
+				}
+			else
+				if(Lst->str=="+" || Lst->str=="-")
+				{
+					Buf.name=Lst->str;
+					Buf.weight=3;
+					StackOP.push_back(Buf);
+					Check();
+				}
+			else
+				if(Lst->str=="*")
+				{
+					Buf.name=Lst->str;
+					Buf.weight=4;
+					StackOP.push_back(Buf);
+					Check();
+				}
+			else
+				if(Lst->str=="(")
+				{
+					Buf.name=Lst->str;
+					Buf.weight=5;
+					StackOP.push_back(Buf);
+				}
+			else
+				if(Lst->str==")")
+				{
+					ClearStack();
+					StackOP.pop_back();
+				}
+			else
+			{
+				StackVAR.push_back(Lst->str);
+				Poz++;
+			}
+		Lst=Lst->next;
+		cout << "Перехожу к следующему символу!" << endl;
+		}
+		cout << "Я печатаю главный стек" << endl;
+		PrintStackVAR(); /*Печатаем стек переменных (сам ПОЛИЗ)*/
+		cout << "Сейчас в векторе элементов: " << Poz << endl;
+	};
+};
+
 int main(){
 char Filebuf[255];
 int Str=0;
@@ -1403,12 +1804,16 @@ cin >> Filebuf;
 cout << endl;
 try{ 
 	Scanner Scan(Filebuf); 
-	WordList Lst=Scan.List;
+	WordList Lst=Scan.GetWordList();
 	WordList Lst1=Lst;
+	WordList Lst2=Lst;
 	Str=Endl_count(Lst1);
-		Parser Pars; 
-		Pars.ParsList(&Lst);/*Вызов парсера!*/
+		//Parser Pars; 
+		//Pars.ParsList(&Lst);/*Вызов парсера!*/
 	cout << endl << "Всё хорошо!" << endl << endl;
+	cout << endl << "Вызываю ПОЛИЗ" << endl << endl;
+	Poliz P1;
+	P1.PolizList(Lst2);
 	//cout << "У функции аргументов: " << Pcount << endl;
 	//Print_L(Scan.List);
 	cout << endl << "В файле строк: " << Str << endl;
@@ -1429,79 +1834,4 @@ return 0;
 */
 
 
-
-/*
-BOOL EXPRESSION OLD
-WordList Lex=*Lst;
-	while(1)
-	{
-		if(Lex->str==":")
-		{
-			if(Bcount!=0)
-					Error("Левых скобок больше, чем правых!");
-			return;
-		}
-		if(Lex->str==")")
-		{
-			Bcount--;
-			if(Bcount<0)
-				Error("Правых скобок больше, чем левых!");
-			return;
-		}
-		cout<<"Я ИЩУ ПЕРЕМЕННУЮ!"<<endl;
-		if(Lex->type_sem==SEM_VAL)
-		{
-			if(Lex->str=="len" || Lex->str=="type")
-			{
-				Lex=GetLex(&(*Lst));
-				if(Lex->str=="(")
-				{
-					Lex=GetLex(&(*Lst));
-					if(Lex->type_sem==SEM_VAL)
-					{
-						Lex=GetLex(&(*Lst));
-						if(Lex->str==")")
-						{
-							Lex=GetLex(&(*Lst));
-						}
-						else
-							Error("Отсутствует закрывающая скобка!");
-					}
-					else
-						Error("Отсутсвует аргумент у len|type!");
-				}
-				else
-					Error("После len|type отсутствует скобка!");
-			}
-			else
-				Lex=GetLex(&(*Lst));
-		}
-		else
-			Error("Bool-выражение начинается с сепаратора??");
-		cout<<"Я ИЩУ СЕПАРАТОР!"<<endl;
-		if(Lex->type_sem==SEM_SEP)
-		{
-			Lex=GetLex(&(*Lst));
-			if(Lex->str=="(")
-			{
-				Bcount++;
-				Lex=GetLex(&(*Lst));
-				BoolExpression(&(*Lst));
-				Lex=GetLex(&(*Lst));
-				if(Lex->type_sem==SEM_SEP)
-					Lex=GetLex(&(*Lst));
-				else
-					if(Lex->str==":")
-					{
-						if(Bcount!=0)
-							Error("Левых скобок больше, чем правых!");
-						return;
-					}
-					else
-						Error("Выражение в скобках закончилось, но там что-то есть (не сепаратор после скобок)!");
-			}
-		}
-		else
-			Error("Отсутствует сепаратор после переменной!");
-	}
-*/
+/*Нужно рекурсивным спуском сделать проверку выражений*/
