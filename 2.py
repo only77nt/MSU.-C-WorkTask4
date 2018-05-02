@@ -1,4 +1,10 @@
-h=7+26-9
-j=7+1-(h+2)
-l="LOL"
-g=3+("LOL"+l)==(l+'u'+l)
+a=1
+b=2
+c=3
+if a>7:
+	print("p1")
+elif a>5:
+	print("p2")
+else:
+	print("p3")
+a=c+5
