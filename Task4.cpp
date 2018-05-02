@@ -1,4 +1,4 @@
-#include "stdafx.h" /*Тут лежат все библиотеки, мой файл!*/
+#include "stdafx.h" /*Тут лежат все библиотеки, мой файл!*/ 
 using namespace std;
 #define countKey 21
 #define countSep1 12
