@@ -57,10 +57,19 @@ struct VAR
 	type_var type;
 };
 
+/*Структура для Полиза*/
 struct ForPoliz
 {
 	string name;
 	int weight;
+};
+
+/*Структура для функций в Полизе*/
+struct FuncPoliz
+{
+	string name;
+	int PolizPoz;
+	int CountPar;
 };
 
 /*Взять лексему*/
@@ -1514,11 +1523,30 @@ public:
 	vector<string> StackVAR;
 	vector<ForPoliz> StackOP;
 	ForPoliz Buf;
+	FuncPoliz FuncBuf;
 	Poliz(){};
 	string a;
 	int Poz=0;
 	vector<int> PozF;
 	vector<int> PozT;
+	vector<FuncPoliz> StackFUNC;
+	int ItIsPoz(string fname)
+	{
+		for(vector<FuncPoliz>::iterator it=StackFUNC.begin();it!=StackFUNC.end();it++)
+		{
+			if((*it).name==fname)
+				return (*it).PolizPoz;
+		}
+	}
+	bool ItIsFunc(string fname)
+	{
+		for(vector<FuncPoliz>::iterator it=StackFUNC.begin();it!=StackFUNC.end();it++)
+		{
+			if((*it).name==fname)
+				return true;
+		}
+		return false;
+	}
 	void PrintStackVAR() /*Функция печати ПОЛИЗА*/
 	{
 		for(vector<string>::iterator it=StackVAR.begin();it!=StackVAR.end();it++)
@@ -1567,8 +1595,11 @@ public:
 		bool WhileFlag=false;
 		bool IfFlag=false;
 		bool ElFlag=false;
+		bool FuncFlag=false;
+		bool NowFunc=false;
 		int Wcount=0;
 		int Icount=0;
+		int NowPoz=0;
 		//cout << Lst->str << "POLIZ!" << endl;
 		Buf.name="@";
 		Buf.weight=-1;
@@ -1576,22 +1607,60 @@ public:
 		while(1)
 		{
 			cout << Lst->str << " Сейчас!" << endl;
-			if(Lst->str=="if" || Lst->str=="elif")
+			if(Lst->str=="def")
 			{
-				IfFlag=true;
-				Icount++;
+				FuncFlag=true;
+				StackVAR.push_back("@");
+				Poz++;
+				Lst=Lst->next;
+				FuncBuf.CountPar=0;
+				FuncBuf.name=Lst->str;
+				StackVAR.push_back(Lst->str);
+				Poz++;
+				Lst=Lst->next->next; /*Пропустили открыв. скобку*/
+				while(Lst->str!=")")
+				{
+					if(Lst->str!=",")
+					{
+						FuncBuf.CountPar++;
+						StackVAR.push_back(Lst->str);
+						Poz++;
+					}
+					Lst=Lst->next;
+				}
+				FuncBuf.PolizPoz=Poz; /*Это позиция начала функции!*/
+				StackFUNC.push_back(FuncBuf); /*Занесли нашу функцию в стек функций*/
+				Lst=Lst->next; /*Пропускаем :*/
 			}
+			else			
+				if(Lst->str=="if" || Lst->str=="elif")
+				{
+					IfFlag=true;
+					Icount++;
+				}
+			/*else
+				if(Lst->str=="elif")
+				{
+					ClearStack();
+					PozT.push_back(Poz);
+					StackVAR.push_back("NULL");
+					Poz++;
+					StackVAR.push_back("!");
+					Poz++;
+					IfFlag=true;
+					Icount++;
+				}*/
 			else
 				if(Lst->str=="else")
 				{
-					/*ClearStack();
+					ClearStack();
 					PozT.push_back(Poz);
 					StackVAR.push_back("NULL");
 					Poz++;
 					StackVAR.push_back("!");
 					Poz++;
 					Lst=Lst->next->next->next;
-					ElFlag=true;*/
+					ElFlag=true;
 				}
 			else
 				if(Lst->str==":")
@@ -1608,6 +1677,7 @@ public:
 				{
 					WhileFlag=true;
 					Wcount++;
+					PozT.push_back(Poz);
 					cout << "Зашёл в while (for)!" << endl;
 				}
 			else
@@ -1616,6 +1686,7 @@ public:
 					cout << "Пропускаю табуляции!" << endl;
 				}
 			else
+/*****************ЕСЛИ МЫ ПОПАЛИ В КОНЕЦ СТРОКИ*******************************/
 				if(Lst->str=="\\n")
 				{
 					ClearStack();
@@ -1628,9 +1699,58 @@ public:
 						StackOP.pop_back();
 						Buf=StackOP.back();
 					}
+					/*Для функций*/
+					if(NowFunc)
+					{
+						ClearStack();
+						StackVAR.push_back(to_string(FuncBuf.PolizPoz));
+						Poz++;
+						StackVAR.push_back("!");
+						Poz++;
+						NowFunc=false;
+						NowPoz=Poz; /*Возвращаемся из функции!*/
+						vector<string>::iterator it=StackVAR.begin();
+						int Counter=0;
+						for(it;(*it)!=FuncBuf.name;it++) Counter++;
+						while((*it)!="FARG")
+						{
+							it++;
+							Counter++;
+						}
+						StackVAR[Counter]=to_string(NowPoz);
+					}
+					if(Lst->next!=NULL && Lst->next->str!="\\t" && FuncFlag) /*While-помощник, вставляем позицию*/
+					{
+						ClearStack();
+						StackVAR.push_back("FARG");
+						Poz++;
+						StackVAR.push_back("!");
+						Poz++;
+						FuncFlag=false;
+					}
+					if(Lst->next==NULL && FuncFlag) /*Аналогичный while-помощник для конца файла (не можем считать лексему!)*/
+					{
+						ClearStack();
+						StackVAR.push_back("FARG");
+						Poz++;
+						StackVAR.push_back("!");
+						Poz++;
+						FuncFlag=false;
+					}
+					/**/
 					/*Для if (на этом моменте if-выражение закончилось)*/
 					if(Lst->next!=NULL && Lst->next->str!="\\t" && IfFlag)
 					{	cout << "			Я ТУТ1" << endl;
+						if(Lst->next->str=="elif")
+						{
+							ClearStack();
+							PozT.push_back(Poz);
+							StackVAR.push_back("NULL");
+							Poz++;
+							StackVAR.push_back("!");
+							Poz++;
+							IfFlag=true;
+						}
 						if(Lst->next->str=="else")
 						{
 							ClearStack();
@@ -1693,7 +1813,17 @@ public:
 					/**/
 					/*Для while*/
 					if(Lst->next!=NULL && Lst->next->str!="\\t" && WhileFlag) /*While-помощник, вставляем позицию*/
-					{
+					{	
+						int Wcount1=Wcount;
+						while(Wcount1)
+						{
+							StackVAR.push_back(to_string(PozT.back()));
+							PozT.pop_back();
+							Poz++;
+							StackVAR.push_back("!");
+							Poz++;
+							Wcount1--;
+						}
 						for(vector<int>::iterator it=PozF.begin();it!=PozF.end();it++)
 						{
 							//cout << (*it) << "PozF1" << endl;
@@ -1708,6 +1838,16 @@ public:
 					}
 					if(Lst->next==NULL && WhileFlag) /*Аналогичный while-помощник для конца файла (не можем считать лексему!)*/
 					{
+						int Wcount1=Wcount;
+						while(Wcount1)
+						{
+							StackVAR.push_back(to_string(PozT.back()));
+							PozT.pop_back();
+							Poz++;
+							StackVAR.push_back("!");
+							Poz++;
+							Wcount1--;
+						}
 						for(vector<int>::iterator it=PozF.begin();it!=PozF.end();it++)
 						{
 							//cout << (*it) << "PozF1" << endl;
@@ -1728,6 +1868,7 @@ public:
 					if(Lst->next==NULL)
 						break;
 				}
+/*************************************************************************************/
 			else
 				if(Lst->str=="=" || Lst->str=="+=" || Lst->str=="-=")
 				{
@@ -1785,6 +1926,14 @@ public:
 			{
 				StackVAR.push_back(Lst->str);
 				Poz++;
+				if(ItIsFunc(Lst->str))
+				{
+					cout << "			Я нашёл функцию!" << endl;
+					NowFunc=true;
+					FuncBuf.PolizPoz=ItIsPoz(Lst->str);
+					cout << FuncBuf.PolizPoz <<"			Позиция в Полизе" << endl;
+					FuncBuf.name=Lst->str;
+				}
 			}
 		Lst=Lst->next;
 		cout << "Перехожу к следующему символу!" << endl;
