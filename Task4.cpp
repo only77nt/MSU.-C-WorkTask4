@@ -1,4 +1,4 @@
-#include "stdafx.h" /*Тут лежат все библиотеки, мой файл!*/ 
+#include "stdafx.h" /*Тут лежат все библиотеки, мой файл!*/
 using namespace std;
 #define countKey 21
 #define countSep1 12
@@ -98,11 +98,6 @@ void Check_print(WordList *Lst);
 
 void Check_if(WordList *Lst);
 
-
-void do_vect( WordList Lst, vector<type_var> *var, vector<type_var> *sep );
-
-
-void type_inside( vector<type_var> *var, vector<type_var> *sep );
 /*************************************************************************************************/
 
 /*Функция поиска в первой таблице сепараторов*/
@@ -1189,13 +1184,6 @@ class Parser {
 						else
 						{
 							WordList Ls=*Lst;
-							WordList Lsss=*Lst;
-							vector<type_var> var,sep;
-							do_vect( Lsss->next->next, &var, &sep );
-							for (vector<type_var>::iterator it=var.begin();it!=var.end();it++)
-								cout<<*it<<endl;
-							type_inside( &var, &sep );
-							cout<<"\n\nVECTOR!!!!!!!\n\n\n"<<var[0]<<endl<<endl;
 							Expression(&(*Lst));
 							if (Ls->next->str=="=")
 								Check_var(Ls->next->next, Ls->str);
@@ -1276,6 +1264,120 @@ void Argum(WordList *Lst)
 
 
 
+/*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
+
+
+
+
+void type_inside( vector<type_var> *var, vector<type_var> *sep )
+{
+	while(1)
+	{
+		if(((*sep).begin()+1)==(*sep).end())
+			return;
+		vector<type_var>::reverse_iterator it_var=(*var).rbegin();
+		vector<type_var>::reverse_iterator it_sep=(*sep).rbegin();
+		if(*(it_var)!=RB || *(it_var)!=LB)
+			if(*(it_var+1)!=RB || *(it_var+1)!=LB)
+				if(*(it_sep)!=LOG)	
+					if(*(it_var)==*(it_var+1))
+					{
+						(*var).pop_back();
+						(*var).pop_back();
+						(*sep).pop_back();
+						(*var).push_back(*(it_var));
+					}
+					else
+						Error("Ошибка с типами в выражении!");
+				else
+					if(*(it_var)==*(it_var+1))
+					{
+						(*var).pop_back();
+						(*var).pop_back();
+						(*sep).pop_back();
+						(*var).push_back(NUMBER);
+					}
+					else
+						Error("Ошибка с типами в выражении!");
+			else
+			{		
+				type_var va=*(it_var);
+				type_var se=*(it_sep);		
+				(*var).pop_back();
+				(*sep).pop_back();
+				(*var).pop_back();
+				(*sep).pop_back();
+				type_inside(var,sep);	//проверит все что внутри скобок
+				(*var).push_back(va);
+				(*sep).push_back(se);
+			}
+		else
+		{					
+			if(*(it_var)==LB)
+			{
+				(*var).pop_back();
+				(*sep).pop_back();
+				return;
+			}
+			(*var).pop_back();
+			(*sep).pop_back();
+			type_inside(var,sep);	//проверит все что внутри скобок
+		} 
+	}
+}
+
+
+
+void do_vect( WordList& Lst, vector<type_var> *var, vector<type_var> *sep )//нужно смотреть все это в одном вайле
+{
+	while (Lst->str !="\\n")
+	{
+		if (Lst->type_l==LEX_SEP)
+		{
+			type_var b=SEP;
+			(*sep).push_back(b);
+		}
+		if (Lst->type_l==LEX_LOG)
+		{
+			type_var b=LOG;
+			(*sep).push_back(b);
+		}
+		if (Lst->type_l==LEX_RB)
+		{
+			type_var b=RB;
+			(*var).push_back(b);
+			(*sep).push_back(b);
+		}
+		if (Lst->type_l==LEX_LB)
+		{
+			type_var b=LB;
+			(*var).push_back(b);
+			(*sep).push_back(b);
+		}
+		if (Lst->type_l==LEX_STR || Lst->type_l==LEX_CHAR)
+		{
+			type_var b=STRING;
+			(*var).push_back(b);
+		}
+		if (Lst->type_l==LEX_VAR)
+		{
+			type_var b=Check(Lst->str);
+			(*var).push_back(b);
+		}
+		if (Lst->type_l==LEX_CONST)
+		{
+			type_var b=NUMBER;
+			(*var).push_back(b);
+		}
+	}	
+	
+	
+	
+	return;
+}
+
+
+/*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
 
 void Check_funk(WordList *Lst)
 {
@@ -1323,8 +1425,8 @@ void Check_var(WordList Lst, string word)
 			typ2=NUMBER;
 		if (Lst->type_l==LEX_CHAR || Lst->type_l==LEX_STR)
 			typ2=STRING;
-		/*if (typ2!=type && type!=NUL && typ2!=NUL)
-			Error("Ошибка с типами в выражении2!");*/
+		if (typ2!=type && type!=NUL && typ2!=NUL)
+			Error("Ошибка с типами в выражении2!");
 		type=typ2;
 		Lst=Lst->next;
 	}
@@ -1408,143 +1510,6 @@ void Check_if(WordList *Lst)
 	}
 }
 
-
-
-
-/*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
-
-
-
-
-void type_inside( vector<type_var> *var, vector<type_var> *sep )
-{
-	while(1)
-	{
-		cout<<"a"<<endl;
-		if(((*sep).begin())==(*sep).end())
-			return;
-		
-		vector<type_var>::reverse_iterator it_var=(*var).rbegin();
-		vector<type_var>::reverse_iterator it_sep=(*sep).rbegin();
-		cout<<"b"<<*(it_var)<<*(it_var+1)<<endl;
-		if(*(it_var)!=RB && *(it_var)!=LB)
-			if(*(it_var+1)!=RB && *(it_var+1)!=LB)
-				if(*(it_sep)!=LOG)	
-					if(*(it_var)==*(it_var+1) || *(it_var)==NUL || *(it_var+1)==NUL)
-					{
-						(*var).pop_back();
-						(*var).pop_back();
-						(*sep).pop_back();
-						(*var).push_back(*(it_var));
-						cout<<"NO LOG"<<endl;
-					}
-					else
-						Error("Ошибка с типами в выражении3!");
-				else
-					if(*(it_var)==*(it_var+1) || *(it_var)==NUL || *(it_var+1)==NUL)
-					{
-						(*var).pop_back();
-						(*var).pop_back();
-						(*sep).pop_back();
-						(*var).push_back(NUMBER);
-						cout<<"LOG"<<endl;
-					}
-					else
-						Error("Ошибка с типами в выражении4!");
-			else
-			{		
-				if(*(it_var+1)==LB )
-				{
-					type_var va=*(it_var);
-					(*var).pop_back();
-					(*var).pop_back();
-					(*sep).pop_back();
-					(*var).push_back(va);
-					cout<<"EXIT RECURCION"<<endl;
-					return;
-				}
-				type_var va=*(it_var);
-				type_var se=*(it_sep);		
-				(*var).pop_back();
-				(*sep).pop_back();
-				(*var).pop_back();
-				(*sep).pop_back();
-				type_inside(var,sep);	//проверит все что внутри скобок
-				(*var).push_back(va);
-				(*sep).push_back(se);
-				cout<<"d"<<endl;
-			}
-		else
-		{	
-			cout<<"c"<<endl;
-			cout<<"RECURS\n"<<*it_var<<endl;				
-			if(*(it_var)==LB )
-			{
-				(*var).pop_back();
-				(*sep).pop_back();
-				cout<<"EXIT RECURCION"<<endl;
-				return;
-			}
-			(*var).pop_back();
-			(*sep).pop_back();
-			type_inside(var,sep);	//проверит все что внутри скобок
-		} 
-	}
-}
-
-
-
-void do_vect( WordList Lst, vector<type_var> *var, vector<type_var> *sep )//нужно смотреть все это в одном вайле
-{
-	while (Lst->str !="\\n")
-	{
-		if (Lst->type_l==LEX_SEP)
-		{
-			type_var b=SEP;
-			(*sep).push_back(b);
-		}
-		if (Lst->type_l==LEX_LOG)
-		{
-			type_var b=LOG;
-			(*sep).push_back(b);
-		}
-		if (Lst->type_l==LEX_RB)
-		{
-			type_var b=RB;
-			(*var).push_back(b);
-			(*sep).push_back(b);
-		}
-		if (Lst->type_l==LEX_LB)
-		{
-			type_var b=LB;
-			(*var).push_back(b);
-			(*sep).push_back(b);
-		}
-		if (Lst->type_l==LEX_STR || Lst->type_l==LEX_CHAR)
-		{
-			type_var b=STRING;
-			(*var).push_back(b);
-		}
-		if (Lst->type_l==LEX_VAR)
-		{
-			type_var b=Check(Lst->str);
-			(*var).push_back(b);
-		}
-		if (Lst->type_l==LEX_CONST)
-		{
-			type_var b=NUMBER;
-			(*var).push_back(b);
-		}
-		Lst=Lst->next;
-	}	
-	
-	
-	
-	return;
-}
-
-
-/*&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*/
 /*************************************************************************************************/
 /*Конец синтаксического анализа*/
 };
@@ -1583,9 +1548,12 @@ public:
 		return false;
 	}
 	void PrintStackVAR() /*Функция печати ПОЛИЗА*/
-	{
+	{	int i=0;
 		for(vector<string>::iterator it=StackVAR.begin();it!=StackVAR.end();it++)
-			cout << (*it) << endl;
+		{	
+			cout << i << "	" << (*it) << endl;
+			i++;
+		}
 	}	
 	void ClearStack() /*Функция очищения стека*/
 	{
@@ -1632,6 +1600,7 @@ public:
 		bool ElFlag=false;
 		bool FuncFlag=false;
 		bool NowFunc=false;
+		bool FuncAgain=false;
 		int Wcount=0;
 		int Icount=0;
 		int NowPoz=0;
@@ -1747,12 +1716,17 @@ public:
 						vector<string>::iterator it=StackVAR.begin();
 						int Counter=0;
 						for(it;(*it)!=FuncBuf.name;it++) Counter++;
-						while((*it)!="FARG")
+						while((*it)!="FARG") /*На этом моменте падает*/
 						{
 							it++;
 							Counter++;
+							if(Counter>StackVAR.size())
+							{	
+								FuncAgain=true;
+								break;
+							}
 						}
-						StackVAR[Counter]=to_string(NowPoz);
+						if(!FuncAgain) StackVAR[Counter]=to_string(NowPoz);
 					}
 					if(Lst->next!=NULL && Lst->next->str!="\\t" && FuncFlag) /*While-помощник, вставляем позицию*/
 					{
@@ -1978,7 +1952,6 @@ public:
 		cout << "Сейчас в векторе элементов: " << Poz << endl;
 	};
 };
-/*Конец Полиза*/
 
 int main(){
 char Filebuf[255];
@@ -1993,8 +1966,8 @@ try{
 	WordList Lst1=Lst;
 	WordList Lst2=Lst;
 	Str=Endl_count(Lst1);
-		Parser Pars; 
-		Pars.ParsList(&Lst);/*Вызов парсера!*/
+		//Parser Pars; 
+		//Pars.ParsList(&Lst);/*Вызов парсера!*/
 	cout << endl << "Всё хорошо!" << endl << endl;
 	cout << endl << "Вызываю ПОЛИЗ" << endl << endl;
 	Poliz P1;
@@ -2020,4 +1993,3 @@ return 0;
 
 
 /*Нужно рекурсивным спуском сделать проверку выражений*/
-
