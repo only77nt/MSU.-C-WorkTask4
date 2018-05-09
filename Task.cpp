@@ -2608,7 +2608,7 @@ class Executor{
 								//cout << bufstr << " BUFFER!" << endl;
 							}
 						else
-							if(buf2[0]>='0' && buf2[0]<='9' && buf1[0]>='0' && buf1[0]<='9') /*Кидаем число*/
+							if(buf2[0]>='0' && buf2[0]<='9' && buf1[0]>='0' && buf1[0]<='9' || buf2[0]=='-' || buf1[0]=='-') /*Кидаем число*/
 							{
 								if((*it)=="+")
 									bufint=stoi(buf1)+stoi(buf2);
@@ -2628,7 +2628,7 @@ class Executor{
 									bufint=stoi(buf1)>=stoi(buf2);
 								if((*it)=="<=")
 									bufint=stoi(buf1)<=stoi(buf2);
-								//cout<< bufint << endl;
+								//cout<< bufint << "bufint" << endl;
 								StackVAR.push_back(to_string(bufint));
 							}
 					}

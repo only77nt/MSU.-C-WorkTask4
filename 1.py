@@ -7,7 +7,7 @@ def DoTwo(num1,num2):
 print ("Hello World!!!")
 name = input("What is your name?\n")
 strng = 'Nikita'
-print(strng*2) 
+print(strng*2)
 print("printf")
 var =2+1
 print(type(var))
@@ -46,6 +46,8 @@ while a<3:
 		print("WTF")
 	print("Two")
 print("Finish")
+count=(15*4)+40-2*(25+5-5)
+print(count)
 '''
 будет реализован:
 функции
