@@ -1734,11 +1734,12 @@ public:
 					Lst=Lst->next->next->next;
 					ElFlag++;
 					int PF;
-					if (Tab!=Tab_count.back())
+					if (Tab!=Tab_count.back() && !WhileFlag)
 					{
 						auto it=PozF.end();
 						cout<<"LOL"<<endl;
 						it-=IfFlag;
+						cout<<"1"<<endl;
 						PF=*it;
 						PozF.erase(it);
 					}
@@ -1835,7 +1836,7 @@ public:
 					cout<<"11       "<<Tab<<endl;
 					//cout<<"22       "<<Tab_count.back()<<endl;
 					//cout<<"				TAb "<<Tab<<"   "<<Tab_count.back()<<"  Wcount "<<Wcount<<" Ifflag "<<WhileFlag<<endl;
-					if (!Tab_count.empty() && Tab==Tab_count.back() && IfFlag && ElFlag)
+					if (!Tab_count.empty() && Tab==Tab_count.back() && IfFlag )
 					{
 						cout<<"						what the hell????!!!"<<endl;
 						Tab_count.pop_back();
@@ -1843,19 +1844,26 @@ public:
 						StackVAR[PF]=to_string(Poz);
 						PozF.pop_back();
 						IfFlag--;
+						Lst=Lst->next;
+						continue;
 					}
-					if (!Tab_count.empty() && Tab==Tab_count.back() && WhileFlag)
+					if (!Tab_count.empty() && Tab==Tab_count.back() && WhileFlag )
 					{
 						Tab_count.pop_back();
 						cout<<"						what the hell123????!!!"<<endl;
 						Wcount--;
-						StackVAR.push_back(to_string(PozT.back()));
-						PozT.pop_back();
-						Poz++;
-						StackVAR.push_back("!");
-						Poz++;
+						if(!IfFlag)
+						{
+							StackVAR.push_back(to_string(PozT.back()));
+							PozT.pop_back();
+							Poz++;
+							StackVAR.push_back("!");
+							Poz++;
+						}
 						Pozz.push_back(Poz);
 						cout<<"						POIZCION "<<Pozz[0]<<endl; 
+						Lst=Lst->next;
+						continue;
 					}
 					
 					cout <<endl<<endl<< "Пропускаю табуляции!" << endl;
@@ -2667,8 +2675,8 @@ try{
 	Poliz P1;
 	Pol=P1.PolizList(Lst2);
 	cout << endl << "Начинаю выполнение: " << endl << endl;
-		Executor E1;
-		E1.Execution(Pol);
+		//Executor E1;
+		//E1.Execution(Pol);
 	//cout << "У функции аргументов: " << Pcount << endl;
 	//Print_L(Scan.List);
 	cout << endl << "В файле строк: " << Str << endl;
