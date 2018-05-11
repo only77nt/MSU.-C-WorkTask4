@@ -182,7 +182,6 @@ public:
 		int i=0;
 		while(1)
 		{
-			//cout<<" 7 7 7 77  77 7 7 "<<Lst->str<<endl;
 			if (Lst->str=="else" )
 				i++;
 			if (Lst->str=="\\n"  &&( Lst->next==NULL || Lst->next->str!="\t"))
@@ -208,8 +207,6 @@ public:
 			Lst=Lst->next;
 			i++;
 		}
-		/*if (Lst->str!="if" && Lst->str!="else" && Lst->str!="elif")
-			return -1;*/
 		return i;
 	}
 	vector<string> PolizList(WordList& Lst) /*Построение ПОЛИЗА*/
@@ -227,7 +224,6 @@ public:
 		int Icount=0;
 		int NowPoz=0;
 		vector<int> Pozz;
-		//cout << Lst->str << "POLIZ!" << endl;
 		Buf.name="@";
 		Buf.weight=-1;
 		StackOP.push_back(Buf);
@@ -280,7 +276,6 @@ public:
 					if (!Tab_count.empty() && Tab==Tab_count.back() && IfFlag && Icount>1)
 					{
 						cout<<"						ЛОЛ КЕК ЧЕБУРЕК2!!!"<<endl;
-						//Tab_count.pop_back();
 						int PF;
 						auto it=PozF.end();
 						cout<<"LOL LOL    "<<*(it-1)<<"   "<<*(it-2)<<endl;
@@ -292,20 +287,13 @@ public:
 						cout<<"куда ставим            "<<PF<<endl;
 						cout<<"вложенность            "<<IfFlag<<endl;
 						cout<<"количество else        "<<Else_count(Lst->next)<<endl<<endl;
-
-						//PozF.pop_back();
-						//IfFlag--;
 					}
 				}
 			else
 				if(Lst->str=="else")
 				{
 					ClearStack();
-					/*if (Tab<Tab_count.back())
-					{
-					}*/
 					cout<<"позиция                "<<Poz<<endl;
-					//cout<<"куда ставим            "<<PF<<endl;
 					cout<<"вложенность            "<<IfFlag<<endl;
 					cout<<"количество else        "<<Else_count(Lst->next)<<endl<<endl;
 					cout<<"количество табуляций    "<<Tab<<endl;
@@ -350,8 +338,6 @@ public:
 			else
 				if(Lst->str==":" && !ArrayFlag)
 				{
-					//cout << "Нашёл двоеточие!        " << Poz<<endl;
-					
 					ClearStack();
 					PozF.push_back(Poz);
 					StackVAR.push_back("NULL");
@@ -359,7 +345,6 @@ public:
 					StackVAR.push_back("!F");
 					Poz++;
 					cout << "Нашёл двоеточие!       позиция: " << Poz<<endl;
-					//cout<<"						ЛОЛ КЕК ЧЕБУРЕК!!!"<<Poz<<endl;
 					
 					if (!Tab_count.empty() && Tab<Tab_count.back() && IfFlag)
 					{
@@ -375,26 +360,6 @@ public:
 						PozF.pop_back();
 						IfFlag--;
 					}
-					/*cout<<"				TAb "<<Tab<<"   "<<Tab_count.back()<<"  Icount "<<Icount<<" Ifflag "<<IfFlag<<endl;
-					if (!Tab_count.empty() && Tab==Tab_count.back() && IfFlag && Icount>1)
-					{
-						cout<<"						ЛОЛ КЕК ЧЕБУРЕК2!!!"<<endl;
-						//Tab_count.pop_back();
-						int PF;
-						auto it=PozF.end();
-						cout<<"LOL LOL    "<<*(it-1)<<"   "<<*(it-2)<<endl;
-						it-=2;
-						PF=*it;
-						PozF.erase(it);
-						StackVAR[PF]=to_string(Poz);
-						cout<<"позиция                "<<Poz<<endl;
-						cout<<"куда ставим            "<<PF<<endl;
-						cout<<"вложенность            "<<IfFlag<<endl;
-						cout<<"количество else        "<<Else_count(Lst->next)<<endl<<endl;
-
-						PozF.pop_back();
-						//IfFlag--;
-					}*/
 				}
 			else
 				if(Lst->str=="while" || Lst->str=="for")
@@ -418,8 +383,6 @@ public:
 						Lst=Lst->next;
 					}
 					cout<<"11       "<<Tab<<endl;
-					//cout<<"22       "<<Tab_count.back()<<endl;
-					//cout<<"				TAb "<<Tab<<"   "<<Tab_count.back()<<"  Wcount "<<Wcount<<" Ifflag "<<WhileFlag<<endl;
 					if (!Tab_count.empty() && Tab==Tab_count.back() && IfFlag )
 					{
 						cout<<"						what the hell????!!!"<<endl;
@@ -496,7 +459,6 @@ public:
 						Poz++;
 						FuncFlag=false;
 					}
-					/**/
 					/*Для if (на этом моменте if-выражение закончилось)*/
 
 
@@ -508,34 +470,10 @@ public:
 						 && Check_tab(Lst->next)<=Tab_count.back())
 /*WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW*/
 					{	
-						//auto it1=Tab_count.begin();
-									
 						cout << "			Я ТУТ1666666" << endl;
 						cout<<endl<<"          "<<Check_tab(Lst->next)<<endl;
 						cout<<"          "<<Tab_count.back()<<endl;
 						cout<<"    Check_else   "<<Check_else(Lst)<<endl;
-						/*if(Lst->next->str=="elif")
-						{
-							ClearStack();
-							PozT.push_back(Poz);
-							StackVAR.push_back("NULL");
-							Poz++;
-							StackVAR.push_back("!");
-							Poz++;
-							//IfFlag=true; хз зачем это!!!
-						}
-						/*if(Check_else(Lst))
-						{
-							cout<<"встретили else  "<<endl;
-							ClearStack();
-							PozT.push_back(Poz);
-							StackVAR.push_back("NULL");
-							Poz++;
-							StackVAR.push_back("!");
-							Poz++;
-							Lst=Lst->next->next;
-							ElFlag++;	
-						}
 						/*итератор меняем на int переменную и убираем for, т.е. делаем int a=PozF.back(), после этого StackVAR[a]=to_string(Poz);*/
 							if(!Check_else(Lst))
 							{
@@ -571,7 +509,6 @@ public:
 						cout<<"позиция                "<<Poz<<endl;
 						cout<<"куда ставим            "<<PF<<endl;
 						cout<<"вложенность            "<<IfFlag<<endl;
-						//cout<<"количество else        "<<Else_count(Lst->next)<<endl<<endl;
 						PozF.pop_back();
 						IfFlag=0;	
 					}
@@ -581,10 +518,7 @@ public:
 					{
 						cout<<endl<<endl<<endl<<endl<<"					FUUUUCCKKKK!!!!!!"<<endl<<endl<<endl;
 						for(vector<int>::iterator it=PozT.begin();it!=PozT.end();it++)
-						{
-							//cout << (*it) << "PozF1" << endl;
 							StackVAR[(*it)]=to_string(Poz);
-						}
 						PozT.pop_back();
 						ElFlag--;	
 					}
@@ -659,13 +593,6 @@ public:
 						}
 						WhileFlag=false;
 					}
-					/*if(Check_tab(Lst->next)==Tab_count.back())
-						IfFlag--;
-					/**/
-					/*Buf.name="	#";
-					Buf.weight=-1;
-					StackVAR.push_back(Buf.name);
-					Poz++;*/
 					if(Lst->next==NULL)
 						break;
 				}

@@ -32,13 +32,28 @@ class Executor{
 	vector<string> Argum2;
 	string buf1, buf2, bufstr, typebuf;
 	int bufint;
+	bool FuncFlag=false;
+	void PrintStackVAR11() /*Функция печати ПОЛИЗА*/
+	{	int i=0;
+		if(StackVAR.empty())
+		{
+			cout << "Стек пуст!" << endl;
+			return;
+		}
+		for(vector<string>::iterator it=StackVAR.begin();it!=StackVAR.end();it++)
+		{	
+			cout << i << "	" << (*it) << endl;
+			i++;
+		}
+	}	
 	void Check(string name) /*Проверяет имена на совпадение и удаляет его если нашёл совпадение*/
 	{
 		for(vector<ForExecute>::iterator it=StackBuf.begin();it!=StackBuf.end();it++)
 		{	
 			if((*it).name==name)
 			{
-				StackBuf.erase(it); /*erase ~ удаление элемента*/
+				if(!FuncFlag)
+					StackBuf.erase(it); /*erase ~ удаление элемента*/
 				return;
 			}
 		}
@@ -111,21 +126,14 @@ class Executor{
 
 	void Execution(vector<string> Poliz)
 	{
-		//buf1=Poliz.back();
-		//cout << "buf1= " << buf1 << endl;
 		int IntBuf;
 		int StrLen;
 		string FuncBuf;
 		string StrBuf;
 		int FuncPoz=0;
-		bool FuncFlag=false;
+		ForExecute BufMy;
 		for(vector<string>::iterator it=Poliz.begin();it!=Poliz.end();it++)
 		{	
-			//cout << (*it) << " лекс" << endl;
-				/*for(vector<ForExecute>::iterator it=StackBuf.begin();it!=StackBuf.end();it++)
-			{
-				cout << (*it).name << " " << (*it).ValueInt << endl;
-			}*/
 			if((*it)=="@")
 			{
 				it++;
@@ -143,20 +151,29 @@ class Executor{
 			else
 				if((*it)=="FARG")
 				{
+					BufMy=StackBuf.back();
+					while(BufMy.name!="%")
+					{
+						StackBuf.pop_back();
+						BufMy=StackBuf.back();
+					}
 					FuncFlag=false;
 					Argum1.clear(); /*Удаляем все временные аргументы*/
 					it=Poliz.begin();
-					//cout << FuncPoz-1 << "FARG FuncPoz" << endl;
 					advance(it,FuncPoz-1);
 					continue;
 				}
 			else
 				if(ItIsFunc((*it))) /*Записываем аргументы функции*/
-				{   //cout << "Записываем аргументы!" << endl;
+				{   
 					FuncFlag=true;
 					it++;
 					while((*(it+1))!="!")
 					{
+						/**/
+						BufMy.name="%";
+						StackBuf.push_back(BufMy);
+						/**/
 						FuncBuf=(*it);
 						if(FindInt(FuncBuf)>=0)
 							FuncBuf=to_string(FindInt(FuncBuf));
@@ -167,25 +184,18 @@ class Executor{
 					}
 					it++;
 					it++;
-					//cout << (*it) << "$$$" << endl;
 					FuncPoz=(it-Poliz.begin());
-					//cout << FuncPoz << " FuncPoz" << endl;
 					it--;
 					it--;
 					it--;
-					//cout << "Записали!" << endl;
 				}
 			else
 				if((*it)=="!")
 					{
 						buf2=StackVAR.back(); /*Метка перехода*/
 						StackVAR.pop_back();
-						//cout << buf2 << " buf2!!!!!" << endl;
 						it=Poliz.begin();
 						advance(it,(stoi(buf2)-1)); /*Advance - перемещает НА столько позиций иттератор*/
-						//cout << (stoi(buf2)) << "Куда прыгнули!!!!!" << endl;
-						//cout << (*it) << "!!!!!" << endl;
-						//cout << "Прыгаем!" << endl;
 						continue;
 					}
 			else
@@ -195,15 +205,11 @@ class Executor{
 					StackVAR.pop_back();
 					buf1=StackVAR.back(); /*Результат*/
 					StackVAR.pop_back();
-					//cout << stoi(buf1) << " buf1" << endl;
 					if(stoi(buf1)<=0)
 					{
 						it=Poliz.begin();
 						advance(it,(stoi(buf2)-1)); /*Advance - перемещает НА столько позиций иттератор*/
-						//cout << "Advance!" << endl;
 					}
-					//cout << (stoi(buf2)) << "!!!!!" << endl;
-					//cout << (*it) << "!!!!!" << endl;
 					continue;
 				}
 			else
@@ -259,7 +265,6 @@ class Executor{
 			else
 				if((*it)=="type")
 				{
-					//cout << "Захожу в type!" << endl;
 					typebuf=StackVAR.back();
 					StackVAR.pop_back();
 					if(FindInt(typebuf)>=0)
@@ -281,7 +286,6 @@ class Executor{
 								StackVAR.push_back("string");
 							else
 								StackVAR.push_back("int");	
-					//cout << typebuf << " TypeBuf" << endl;				
 				}
 			else
 				if((*it)=="print")
@@ -292,18 +296,13 @@ class Executor{
 						it1=StackVAR.begin();
 						buf1=(*it1);
 						StackVAR.erase(it1);
-						//cout << buf1[0] << " нулевое" << endl;
 						if(FindArgum(buf1)!=-1)
 						{
 							buf1=Exchange(FindArgum(buf1));
-							//cout << buf1 << " Buf1" << endl;
-							//cout << "НАШЁЛ2!" << endl;
 						}
-						//cout << buf1 << endl;
 						if(FindInt(buf1)>=0)
 						{	
 							IntBuf=FindInt(buf1);
-							//cout << "!!!!!" << endl;
 							cout << IntBuf << endl;
 						}
 						else
@@ -333,16 +332,9 @@ class Executor{
 					buf1=StackVAR.back();
 					StackVAR.pop_back();
 					if(FindArgum(buf1)!=-1)
-					{
 						buf1=Exchange(FindArgum(buf1));
-						//cout << "НАШЁЛ1!" << endl;
-					}
 					if(FindArgum(buf2)!=-1)
-					{
 						buf2=Exchange(FindArgum(buf2));
-						//cout << "НАШЁЛ3!" << endl;
-					}	
-					//cout << "buf1= " << buf1 << " buf2= " << buf2<< endl;
 					if((*it)=="=") /*=*/
 					{
 						ForExecute buf; /**/
@@ -354,8 +346,6 @@ class Executor{
 							buf.ValueInt=stoi(buf2); /*stoi ~ stirng -> int*/
 						else
 							buf.ValueStr=buf2;
-						//cout << buf.ValueInt << " Значение!" << endl;
-						//cout << buf.name << " Buf" << endl;
 						StackBuf.push_back(buf);
 					}
 					if(FindInt(buf1)>=0)
@@ -373,7 +363,6 @@ class Executor{
 							if(buf1[0]=='"')
 							{
 								buf1.erase(buf1.rfind('"'), 1);
-								//buf1.erase(buf1.find('"'), 1);
 							}
 							else
 							{
@@ -384,7 +373,6 @@ class Executor{
 							if(buf2[0]=='"')
 							{
 								buf2.erase(buf2.find('"'), 1);
-								//buf2.erase(buf2.find('"'), 1);
 							}
 							else
 							{
@@ -394,7 +382,6 @@ class Executor{
 							}
 							bufstr=buf1+buf2;
 							StackVAR.push_back(bufstr);
-							//cout << bufstr << " BUFFER!" << endl;
 						}
 						else
 							if((buf1[0]=='"' || buf1[0]=='\'') && buf2[0]>='0' && buf2[0]<='9' && (*it)=="*") /*Удаляем кавычки, кидаем строку*/
@@ -410,12 +397,9 @@ class Executor{
 									buf1.erase(buf1.find('\''), 1);
 								}
 								int Itter=stoi(buf2);
-								//cout << Itter << " Itter" << endl;
 								for(int i=0; i!=Itter;i++)
 									bufstr+=buf1;
-								//cout << bufstr << " bufstr" << endl;
 								StackVAR.push_back(bufstr);
-								//cout << bufstr << " BUFFER!" << endl;
 							}
 						else
 							if((buf2[0]=='"' || buf2[0]=='\'') && buf1[0]>='0' && buf1[0]<='9' && (*it)=="*") /*Удаляем кавычки, кидаем строку*/
@@ -434,7 +418,6 @@ class Executor{
 								for(int i=0; i!=Itter;i++)
 									bufstr+=buf2;
 								StackVAR.push_back(bufstr);
-								//cout << bufstr << " BUFFER!" << endl;
 							}
 						else
 							if(buf2[0]>='0' && buf2[0]<='9' && buf1[0]>='0' && buf1[0]<='9' || buf2[0]=='-' || buf1[0]=='-') /*Кидаем число*/
@@ -457,21 +440,15 @@ class Executor{
 									bufint=stoi(buf1)>=stoi(buf2);
 								if((*it)=="<=")
 									bufint=stoi(buf1)<=stoi(buf2);
-								//cout<< bufint << "bufint" << endl;
 								StackVAR.push_back(to_string(bufint));
 							}
 					}
 				}
 			else
-			{
-				/*if((*it)[0]=='\'')
-				{
-					(*it).erase((*it).find('\''), 1);
-					(*it).erase((*it).find('\''), 1);
-				}*/
 				StackVAR.push_back((*it));
-			}
 		}
+		cout << "Печатаю стек после выполнения: " << endl;
+		PrintStackVAR11();
 	}
 };
 

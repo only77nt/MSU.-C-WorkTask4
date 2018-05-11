@@ -172,7 +172,6 @@ void Print(WordList *Lst){
 void Argum1(WordList *Lst)
 {
 	WordList Lex=*Lst;
-	//cout<<Lex->type_sem<<"!!!!!!!!!"<<SEM_VAL<<endl;
 	if(Pcount[FuncNum]==0)
 	{
 		if(Lex->type_sem==SEM_RB)
@@ -320,15 +319,6 @@ class Parser {
 			b.name="i";
 			b.type=NUMBER;
 			a.push_back(b);
-			/*b.name="str";
-			b.type=NUMBER;
-			funk.push_back(b);
-			b.name="len";
-			b.type=NUMBER;
-			funk.push_back(b);
-			b.name="type";
-			b.type=STRING;
-			funk.push_back(b);*/
 			string FuncName[50];
 			int i=0;
 			int TABcountBuf=1;
@@ -479,7 +469,6 @@ class Parser {
 							if(Lex->type_sem==SEM_RB)
 							{
 								Bcount--;
-								//cout << Pcount[FuncNum]<<"Колво параметров в функции"<<endl;
 								if(Bcount<0)
 									Error("Закрыв. скобок больше, чем открыв.!");
 								Lex=GetLex(&(*Lst));
@@ -496,7 +485,6 @@ class Parser {
 										cout<<Lex->str<<"ЛЕКСЕМА ТУТ"<<endl;
 										if(Lex->type_l!=LEX_TAB)
 											Error("Функция с пустым телом!");
-										//cout << Lex->str << "?????" << endl;
 										cout << "Я прибавил флаг!" <<endl;
 										FORcount++;
 										continue;
@@ -519,7 +507,6 @@ class Parser {
 									cout<<Lex->str<<"ЛЕКСЕМА ТУТ"<<endl;
 									if(Lex->type_l!=LEX_TAB)
 										Error("Функция с пустым телом!");
-									//cout << Lex->str << "?????" << endl;
 									cout << "Я прибавил флаг!" <<endl;
 									FORcount++;
 									continue;
@@ -545,7 +532,6 @@ class Parser {
 						Bcount++;
 						Lex=GetLex(&(*Lst));
 						cout<<"Вызываю аргумент1!"<< Lex->str <<endl;
-						//cout << Lex->str<<" "<<Lex->type_l<<" "<<Lex->type_sem<<endl;
 						Argum1(&(*Lst));
 						cout << (*Lst)->str<< "!!!!!"<< endl;
 						cout<<"Вышёл из аргумента1!"<<endl;						
@@ -708,8 +694,6 @@ class Parser {
 					while (Ls->str!="\\n")
 					{
 						cout<<Ls->str<<endl;
-						/*if (Ls->str=="\\n")
-							break;*/
 						Check_print(&Ls);
 						Ls=Ls->next;
 					}
@@ -744,7 +728,6 @@ void Argum(WordList *Lst)
 			if(Lex->type_sem==SEM_RB)
 			{
 				Bcount--;
-				//cout << Pcount[FuncNum]<<"Колво параметров в функции"<<endl;
 				if(Bcount<0)
 					Error("Закрыв. скобок больше, чем открыв.!");
 				return;
